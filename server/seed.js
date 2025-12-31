@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const email = 'admin@mitienda.com'; // 1. Cambiá esto por el email real
-  const passwordRaw = 'passwordSegura123';       // 2. Cambiá esto por la contraseña real
+  const passwordRaw = 'passwordSegura12';       // 2. Cambiá esto por la contraseña real
   const name = 'Admin Principal';
 
   const hashedPassword = await bcrypt.hash(passwordRaw, 10);
