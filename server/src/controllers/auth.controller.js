@@ -1,10 +1,8 @@
-import { PrismaClient } from '@prisma/client'; // Importación directa
+import { prisma } from '../../prisma/client.js';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 
-// Creamos la instancia acá mismo
-const prisma = new PrismaClient();
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -29,8 +27,19 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: "Credenciales inválidas" });
     }
 
+      if (!user.isActive) {
+    return res.status(403).json({ error: 'Usuario deshabilitado' });
+  }
+
+  if (user.mustChangePassword) {
+    return res.json({
+    mustChangePassword: true
+  });
+
+  }
+
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );

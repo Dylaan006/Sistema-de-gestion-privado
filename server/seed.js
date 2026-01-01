@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './prisma/client.js';
 import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
 
 async function main() {
   const email = 'admin@mitienda.com'; // 1. Cambiá esto por el email real
