@@ -1,34 +1,34 @@
-import { prisma } from './prisma/client.js';
-import bcrypt from 'bcrypt';
-
+import prisma from './prismaClient.js';
+import { hashPassword } from './src/utils/password.js';
 
 async function main() {
-  const email = 'admin@mitienda.com'; // 1. Cambiá esto por el email real
-  const passwordRaw = 'passwordSegura12';       // 2. Cambiá esto por la contraseña real
-  const name = 'Admin Principal';
+  const adminEmail = 'admin@admin.com';
+  const adminPassword = 'admin123';
 
-  const hashedPassword = await bcrypt.hash(passwordRaw, 10);
-
-  // Usamos upsert: Si existe lo actualiza, si no, lo crea.
-  // Esto evita errores si corrés el script dos veces.
-  const user = await prisma.user.upsert({
-    where: { email: email },
-    update: {
-        password: hashedPassword, // Permite resetear la pass si te olvidás
-    },
-    create: {
-      email: email,
-      name: name,
-      password: hashedPassword
-    },
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail }
   });
 
-  console.log(`✅ Usuario gestionado con éxito: ${user.email}`);
+  if (!existingAdmin) {
+    const hashedPassword = await hashPassword(adminPassword);
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'ADMIN',
+        name: 'Super Admin',
+        mustChangePassword: false
+      }
+    });
+    console.log('Admin user created');
+  } else {
+    console.log('Admin user already exists');
+  }
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Error creando usuario:", e);
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {
