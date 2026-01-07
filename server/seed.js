@@ -5,6 +5,15 @@ async function main() {
   const adminEmail = 'admin@admin.com';
   const adminPassword = 'admin123';
 
+  // Create default organization
+  let org = await prisma.organization.findFirst({ where: { name: 'Main Organization' } });
+  if (!org) {
+    org = await prisma.organization.create({
+      data: { name: 'Main Organization' }
+    });
+    console.log('Organization created');
+  }
+
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail }
   });
@@ -17,7 +26,8 @@ async function main() {
         password: hashedPassword,
         role: 'ADMIN',
         name: 'Super Admin',
-        mustChangePassword: false
+        mustChangePassword: false,
+        organizationId: org.id
       }
     });
     console.log('Admin user created');

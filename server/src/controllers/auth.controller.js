@@ -34,7 +34,8 @@ export const login = async (req, res) => {
     const token = signToken({
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      organizationId: user.organizationId
     });
 
     res.json({
@@ -44,6 +45,7 @@ export const login = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        organizationId: user.organizationId,
         mustChangePassword: user.mustChangePassword
       }
     });

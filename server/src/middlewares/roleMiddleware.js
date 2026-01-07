@@ -23,3 +23,4 @@ export const roleMiddleware = (requiredRole) => {
 
 export const requireAdmin = roleMiddleware('ADMIN');
 export const requireStaff = roleMiddleware('STAFF');
+export const requireReadOnly = roleMiddleware('READ_ONLY');

@@ -23,10 +23,113 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  organizationId Int
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  stockMovements StockMovement[]
+}
+
+model Organization {
+  id         Int             @id @default(autoincrement())
+  name       String          @unique
+  users      User[]
+  products   Product[]
+  categories Category[]
+  suppliers  Supplier[]
+  movements  StockMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Role {
   ADMIN
   STAFF
-  OPERATOR // Keeping OPERATOR just in case, or replacing with STAFF? Roadmap said STAFF. I'll add STAFF.
+  READ_ONLY
+  OPERATOR
+}
+
+model Product {
+  id Int @id @default(autoincrement())
+
+  name        String
+  barcode     String?
+  description String?
+  price       Decimal @default(0)
+  cost        Decimal @default(0)
+  stock       Int     @default(0)
+  minStock    Int     @default(0)
+
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  supplierId Int?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  movements StockMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, barcode]) // Barcode unique per organization
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, name])
+}
+
+model Supplier {
+  id    Int     @id @default(autoincrement())
+  name  String
+  email String?
+  phone String?
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, name])
+}
+
+model StockMovement {
+  id Int @id @default(autoincrement())
+
+  type     MovementType
+  quantity Int
+  reason   String?
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUST
 }

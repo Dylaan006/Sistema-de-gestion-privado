@@ -20,10 +20,12 @@ export const authMiddleware = (req, res, next) => {
     }
 
     // Attach minimal user info to request
+    // Attach minimal user info to request
     req.user = {
         id: decoded.id,
         role: decoded.role,
-        email: decoded.email
+        email: decoded.email,
+        organizationId: decoded.organizationId
     };
 
     next();

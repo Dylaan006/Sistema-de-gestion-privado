@@ -6,6 +6,7 @@ import prisma from './prismaClient.js';
 
 import authRoutes from './src/routes/auth.routes.js';
 import userRoutes from './src/routes/user.routes.js';
+import productRoutes from './src/routes/product.routes.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.get('/health', async (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api', productRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
