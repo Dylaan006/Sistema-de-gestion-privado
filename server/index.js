@@ -7,6 +7,13 @@ import prisma from './prismaClient.js';
 import authRoutes from './src/routes/auth.routes.js';
 import userRoutes from './src/routes/user.routes.js';
 import productRoutes from './src/routes/product.routes.js';
+import stockRoutes from './src/routes/stock.routes.js';
+import saleRoutes from './src/routes/sale.routes.js';
+import organizationRoutes from './src/routes/organization.routes.js';
+import clientRoutes from './src/routes/client.routes.js';
+import afipRoutes from './src/routes/afip.routes.js';
+import statsRoutes from './src/routes/stats.routes.js';
+
 
 dotenv.config();
 
@@ -35,7 +42,16 @@ app.get('/health', async (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api', productRoutes);
+app.use('/api/organization', organizationRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/afip', afipRoutes);
+app.use('/api/stock', stockRoutes); // Mount stock routes at /api/stock
+app.use('/api/stats', statsRoutes);
+
+// Mount routes that define their own paths (legacy or mixed)
+app.use('/api', productRoutes); // Handles /products
+app.use('/api', saleRoutes);    // Handles /sales
+
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

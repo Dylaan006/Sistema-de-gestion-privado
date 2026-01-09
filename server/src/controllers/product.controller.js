@@ -65,6 +65,12 @@ export const createProduct = async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ error: error.errors });
         }
+        // DEBUG LOG TO FILE
+        try {
+            const fs = await import('fs');
+            fs.writeFileSync('product-error.txt', `Date: ${new Date().toISOString()}\nError: ${error.stack || error.message}\n`);
+        } catch (e) { console.error(e) }
+
         logger.error('Create product error', error);
         res.status(500).json({ error: 'Error al crear producto' });
     }
@@ -73,17 +79,16 @@ export const createProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
     try {
         const organizationId = req.user.organizationId;
-
-        // Optional filters
         const { categoryId, supplierId, search } = req.query;
 
-        const where = { organizationId };
+        // Filter by Active Only
+        const where = { organizationId, isActive: true };
 
         if (categoryId) where.categoryId = parseInt(categoryId);
         if (supplierId) where.supplierId = parseInt(supplierId);
         if (search) {
             where.OR = [
-                { name: { contains: search } }, // Case insensitive usually depends on DB, SQLite is distinct
+                { name: { contains: search } },
                 { barcode: { contains: search } }
             ];
         }
@@ -109,27 +114,22 @@ export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const organizationId = req.user.organizationId;
-        const data = productSchema.partial().parse(req.body); // Allow partial updates
+        const data = productSchema.partial().parse(req.body);
 
-        // Ensure product belongs to user's organization
         const existing = await prisma.product.findFirst({
-            where: { id: parseInt(id), organizationId }
+            where: { id: parseInt(id), organizationId, isActive: true }
         });
 
         if (!existing) return res.status(404).json({ error: 'Producto no encontrado' });
 
-        // Barcode check if changing
         if (data.barcode && data.barcode !== existing.barcode) {
             const barcodeExists = await prisma.product.findFirst({
-                where: { organizationId, barcode: data.barcode }
+                where: { organizationId, barcode: data.barcode, isActive: true }
             });
             if (barcodeExists) return res.status(400).json({ error: 'Código de barras en uso' });
         }
 
-        // Don't update stock directly here? Or allow it? 
-        // Plan said: "No vamos a editar el stock a mano en la tabla de productos solamente".
-        // So we should remove 'stock' from update payload to force using Adjustment endpoint.
-        delete data.stock;
+        delete data.stock; // Stock managed via adjustments
 
         const updated = await prisma.product.update({
             where: { id: parseInt(id) },
@@ -144,5 +144,52 @@ export const updateProduct = async (req, res) => {
         }
         logger.error('Update product error', error);
         res.status(500).json({ error: 'Error al actualizar producto' });
+    }
+};
+
+export const deleteProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organizationId = req.user.organizationId;
+        const productId = parseInt(id);
+
+        // Fetch product with counts of history
+        const existing = await prisma.product.findFirst({
+            where: { id: productId, organizationId, isActive: true },
+            include: {
+                _count: {
+                    select: {
+                        saleItems: true,
+                        movements: true
+                    }
+                }
+            }
+        });
+
+        if (!existing) return res.status(404).json({ error: 'Producto no encontrado' });
+
+        const hasHistory = existing._count.saleItems > 0 || existing._count.movements > 0;
+
+        if (hasHistory) {
+            // Soft Delete: Preserve data, but mark inactive and free up barcode
+            await prisma.product.update({
+                where: { id: productId },
+                data: {
+                    isActive: false,
+                    barcode: existing.barcode ? `${existing.barcode}_DEL_${Date.now()}` : null
+                }
+            });
+            res.json({ message: 'Producto archivado (tiene historial)' });
+        } else {
+            // Hard Delete: Safe to remove completely
+            await prisma.product.delete({
+                where: { id: productId }
+            });
+            res.json({ message: 'Producto eliminado definitivamente' });
+        }
+
+    } catch (error) {
+        logger.error('Delete product error', error);
+        res.status(500).json({ error: 'Error al eliminar producto' });
     }
 };

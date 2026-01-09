@@ -10,6 +10,28 @@ const createUserSchema = z.object({
     role: z.enum(['ADMIN', 'STAFF', 'OPERATOR']).default('OPERATOR')
 });
 
+export const getUsers = async (req, res) => {
+    try {
+        const organizationId = req.user.organizationId;
+        const users = await prisma.user.findMany({
+            where: { organizationId },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                role: true,
+                isActive: true,
+                createdAt: true
+            },
+            orderBy: { name: 'asc' }
+        });
+        res.json(users);
+    } catch (error) {
+        logger.error('Get users error', error);
+        res.status(500).json({ error: 'Error al obtener usuarios' });
+    }
+};
+
 export const createUser = async (req, res) => {
     try {
         const data = createUserSchema.parse(req.body);

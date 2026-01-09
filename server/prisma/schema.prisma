@@ -27,16 +27,29 @@ model User {
   organizationId Int
   organization   Organization    @relation(fields: [organizationId], references: [id])
   stockMovements StockMovement[]
+  sales          Sale[]
 }
 
 model Organization {
-  id         Int             @id @default(autoincrement())
-  name       String          @unique
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  cuit         String?
+  taxCondition TaxCondition?
+
+  // AFIP Configuration
+  afipCrt       String? // Certificate Content
+  afipKey       String? // Private Key Content (should be encrypted in prod)
+  salesPoint    Int       @default(1)
+  grossIncome   String?
+  startActivity DateTime?
+
   users      User[]
   products   Product[]
   categories Category[]
   suppliers  Supplier[]
   movements  StockMovement[]
+  clients    Client[]
+  sales      Sale[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -59,6 +72,7 @@ model Product {
   cost        Decimal @default(0)
   stock       Int     @default(0)
   minStock    Int     @default(0)
+  isActive    Boolean @default(true) // Soft Delete
 
   categoryId Int?
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -71,8 +85,9 @@ model Product {
 
   movements StockMovement[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  saleItems SaleItem[]
 
   @@unique([organizationId, barcode]) // Barcode unique per organization
 }
@@ -122,14 +137,102 @@ model StockMovement {
   userId Int
   user   User @relation(fields: [userId], references: [id])
 
+  unitCost Decimal @default(0)
+
   organizationId Int
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   createdAt DateTime @default(now())
 }
 
+model Client {
+  id           Int          @id @default(autoincrement())
+  name         String
+  cuit         String?
+  address      String?
+  email        String?
+  taxCondition TaxCondition @default(CONSUMIDOR_FINAL)
+  isActive     Boolean      @default(true) // Soft Delete
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  sales Sale[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, cuit])
+}
+
+model Sale {
+  id Int @id @default(autoincrement())
+
+  date  DateTime @default(now())
+  total Decimal
+
+  invoiceType   InvoiceType @default(B)
+  cae           String?
+  caeExpiration DateTime?
+  invoiceNumber Int? // Numero de comprobante oficial de AFIP
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  clientId Int?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  items SaleItem[]
+
+  // Credit Note Relation
+  relatedSaleId Int?
+  relatedSale   Sale?  @relation("RelatedSale", fields: [relatedSaleId], references: [id])
+  creditNotes   Sale[] @relation("RelatedSale")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  number Int @default(0) // Internal/Visual number per organization and type
+
+  @@unique([organizationId, invoiceType, number])
+}
+
+model SaleItem {
+  id Int @id @default(autoincrement())
+
+  quantity  Int
+  unitPrice Decimal
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  saleId Int
+  sale   Sale @relation(fields: [saleId], references: [id])
+}
+
 enum MovementType {
   IN
   OUT
   ADJUST
+}
+
+enum TaxCondition {
+  RESPONSABLE_INSCRIPTO
+  MONOTRIBUTISTA
+  CONSUMIDOR_FINAL
+  EXENTO
+}
+
+enum InvoiceType {
+  A
+  B
+  C
+  X
+  NCA
+  NCB
+  NCC
+  NCX
 }

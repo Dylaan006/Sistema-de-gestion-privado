@@ -1,35 +1,43 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+import Login from './pages/Login';
+import Layout from './components/Layout';
+import Products from './pages/Products';
+import StockMovements from './pages/StockMovements';
+import POS from './pages/POS';
+import Dashboard from './pages/Dashboard';
+import Sales from './pages/Sales';
+import Clients from './pages/Clients';
+import OrganizationSettings from './pages/OrganizationSettings';
+import Users from './pages/Users';
 
-function App() {
-  const [count, setCount] = useState(0)
+// ... inside Routes (Removing stray comment/code)
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function PrivateRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div>Cargando...</div>;
+  return user ? children : <Navigate to="/login" />;
 }
 
-export default App
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+
+      <Route path="/" element={
+        <PrivateRoute>
+          <Layout />
+        </PrivateRoute>
+      }>
+        <Route index element={<Dashboard />} />
+        <Route path="products" element={<Products />} />
+        <Route path="stock-history" element={<StockMovements />} />
+        <Route path="sales" element={<Sales />} />
+        <Route path="pos" element={<POS />} />
+        <Route path="clients" element={<Clients />} />
+        <Route path="users" element={<Users />} />
+        <Route path="settings" element={<OrganizationSettings />} />
+      </Route>
+    </Routes>
+  );
+}

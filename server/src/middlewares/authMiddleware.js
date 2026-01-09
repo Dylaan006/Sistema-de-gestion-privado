@@ -20,7 +20,6 @@ export const authMiddleware = (req, res, next) => {
     }
 
     // Attach minimal user info to request
-    // Attach minimal user info to request
     req.user = {
         id: decoded.id,
         role: decoded.role,
@@ -30,3 +29,5 @@ export const authMiddleware = (req, res, next) => {
 
     next();
 };
+
+export const authenticateToken = authMiddleware;

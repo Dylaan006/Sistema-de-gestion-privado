@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createProduct, getProducts, updateProduct } from '../controllers/product.controller.js';
+import { createProduct, getProducts, updateProduct, deleteProduct } from '../controllers/product.controller.js';
 import { adjustStock, getMovements } from '../controllers/stock.controller.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { requireStaff, requireAdmin } from '../middlewares/roleMiddleware.js';
@@ -17,9 +17,10 @@ router.use(authMiddleware);
 router.post('/products', requireStaff, createProduct);
 router.get('/products', requireStaff, getProducts); // Staff & Admin & ReadOnly? ReadOnly should see too.
 router.put('/products/:id', requireStaff, updateProduct);
+router.delete('/products/:id', requireStaff, deleteProduct);
 
-// Stock
-router.post('/stock/adjust', requireStaff, adjustStock);
-router.get('/stock/movements', requireStaff, getMovements); // Maybe restricted to Admin? Staff usually needs to see.
+// Stock routes are handled in stock.routes.js
+// router.post('/stock/adjust', requireStaff, adjustStock);
+// router.get('/stock/movements', requireStaff, getMovements);
 
 export default router;
